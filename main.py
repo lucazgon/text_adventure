@@ -36,7 +36,12 @@ What did I learn from this?
 - unknown objects should be added to the known list after a condition is met (moving a painting etc)
 - what if objects are in a drawer, and the drawer is closed? the "known objects" should change. 
 - maybe a container object. if key provided openable. sometimes not closable (if broken)
--
+
+Things that I think would be cool / should include
+- ability for the user to type and act
+- keyword keys. if you want to destroy a glass case, using anything that is large, heavy or a weapon should be able to do the trick!
+- locked pathways, you can go around, or find a key
+
 
 '''
 
@@ -51,9 +56,15 @@ class Player():
         self.name = "d_name"
         self.inventory = []
         self.location = None
+        self.actions = {"look" : self.look}
 
-    def look(self):
-        self.location.generate_desc()
+    def look(self, primary_object = None):
+        if primary_object != None:
+            print(primary_object.desc)
+        elif self.location != None:
+            self.location.generate_desc()
+        else:
+            print("you are... nowhere?")
 
     def move(self, new_loc):
         if new_loc in self.location.connected_locs:
@@ -96,29 +107,24 @@ class Player():
             primary_object.use()
         else:
             print("that doesn't work :'C")
+
         '''
-        if  self.inventory[0] in self.location.connected_locs[0].keys:
-            self.location.connected_locs[0].open = True
-            print(f"{self.inventory[0].name} used!")
-        elif self.location.known_items[0].keys == None:
-            print("using!")
-        else:
-            print("not used!")
         '''
 
     def handle_input(self):
         user_input = input(">")
-        if "take" in user_input :
-            pass
+        valid_object = None
+        words = user_input.split(" ")
+        for word in words:
+            for object in self.location.known_items:
+                if word == object.name:
+                    valid_object = object
+                    break
+            if word in self.actions:
+                self.actions[word](valid_object)
 
 class Location():
     '''
-    maybe location should be more like "node" some completely abstract location where you can interact with only certain objects while you're there
-    if you open a box should you be at the box node until you leave it? its more like a workspace than a place
-    - when you're at a desk, you can only do desk things
-    - when you open the drawer you can only do drawer things
-
-    naw thats werid, what happens if a monster wants to beat you up and you go to the "drawer" location???
     '''
 
     def __init__(self):
@@ -142,7 +148,6 @@ class Location():
         for loc in self.connected_locs:
             locs_list.append(loc.name)
         print(f"you stand in a {self.name}. you see: {known_items_list}, nearby: {locs_list}")
-        pass
 
 class Item():
     def __init__(self):
@@ -164,9 +169,25 @@ class Item():
         pass
 
 def main():
+    loc_a = Location()
+    loc_a.name = "kitchen"
+
+    item_a = Item()
+    item_a.name = "box key"
+
+    item_b = Item()
+    item_b.name = "box"
+    item_b.keys = [item_a]
+
+    loc_a.known_items = [item_a,item_b]
+
+    new_player = Player()
+    new_player.location = loc_a
+
+    while True:
+        new_player.handle_input()
+
     '''
-    '''
-    
     item_a = Item()
     item_a.name = "box key"
 
@@ -176,6 +197,7 @@ def main():
 
     item_c = Item()
     item_c.name = "shelf"
+    item_c.desc = "A large wooden bookshelf stuffed tightly with old novels"
 
     item_d = Item()
     item_d.name = "red book"
@@ -189,7 +211,6 @@ def main():
 
     loc_b = Location()
     loc_b.name = "dining room"
-    #loc_b.keys = [item_a, item_b]
     loc_b.open = False
 
     loc_a.known_items = [item_a,item_b,item_c]
@@ -200,14 +221,12 @@ def main():
     
     new_player.look()
     new_player.take(item_a)
-    #new_player.take(item_d)
     
-    #new_player.move()
     new_player.use(item_c)
-    #new_player.move()
-    new_player.look()
+    new_player.look(item_c)
     new_player.take(item_e)
     new_player.move(loc_b)
+    '''
 
 
 
