@@ -45,6 +45,8 @@ Things that I think would be cool / should include
 
 '''
 
+import os
+
 def get_names(list):
     names_list = []
     for item in list:
@@ -193,7 +195,8 @@ class Location():
             known_items_list.append(item.name)
         for loc in self.connected_locs:
             locs_list.append(loc.name)
-        print(f"you stand in a {self.name}. you see: {known_items_list}, nearby: {locs_list}")
+        print(f"{self.name}\nyou see: {known_items_list}, paths: {locs_list}")
+        print(self.desc)
 
 class Item():
     def __init__(self):
@@ -216,45 +219,95 @@ class Item():
         else:
             self.trigger = True
 
-def main():
-    loc_a = Location()
-    loc_a.name = "kitchen"
+def golem_scenario():
+    
+    # item definitions
 
-    loc_b = Location()
-    loc_b.name = "dining"
+    # player items
+    note = Item()
+    note.name = "king's note"
+    note.desc = "hello brave adventurer, please clear out this musty cave for me. thank you!"
 
-    #loc_a.connected_locs.append(loc_b)
-    #loc_b.connected_locs.append(loc_a)
+    sword = Item()
+    sword.name = "longsword"
+    sword.desc = "it's the cheapest sword money can buy"
 
-    item_a = Item()
-    item_a.name = "switch"
+    # room 1 items
+    golem = Item()
+    golem.name = "d_name"
+    golem.desc = "d_desc"
 
-    item_b = Item()
-    item_b.name = "box"
-    item_b.desc = "its wood, it looks like theres a hole on the side of it"
-    item_b.keys = [item_a]
+    desk = Item()
+    desk.name = "d_name"
+    desk.desc = "d_desc"
 
-    item_c = Item()
-    item_c.name = "shiny locket"
+    coin_pouch = Item()
+    coin_pouch.name = "coin pouch"
+    coin_pouch.desc = "a small leather pouch made from the hide of a creature that no longer roams the earth. it holds 5 coins"
 
-    loc_a.known_items = [item_a,item_b]
+    skeleton = Item()
+    skeleton.name = "skeleton"
+    skeleton.desc = "the skeleton is wearing tattered fancy robes. their rib cage has been shattered"
+    skeleton.sub_items = [coin_pouch]
 
+    curtain = Item()
+    curtain.name = "curtain"
+    curtain.desc = "age has left its mark on this curtain. a drawstring rests to the side of it"
+    curtain.sub_items = []
+
+    # item connections
+
+    # room definitions
+
+    entrance = Location()
+    entrance.name = "entrance"
+    entrance.desc = "this is a massive stone carved room with a large ornate desk in the center.\n\
+A satin purple curtain covers the back wall.\n\
+There are skeletons and stone statues dotted about the room."
+    entrance.known_items = [skeleton,curtain]
+
+    trophy_room = Location()
+    trophy_room.name = "trophy room"
+    trophy_room.desc = "this is a dome shaped room. \
+There are statues placed on plinths in a semicircle. \
+There are many paintings spread out along the wall."
+
+
+    security_checkpoint = Location()
+    security_checkpoint.name = "security checkpoint"
+    security_checkpoint.desc = "this is a long hallway.\
+there is a bust of a statue affixed to a round base in the middle of the room. \
+tn front of the statue is a desk and a notice board with a bunch of scraps of paper that appear to be warning signs. "
+
+    # room connections
+
+    
+    entrance.connected_locs = [security_checkpoint,trophy_room]
+    trophy_room.connected_locs = [entrance]
+    security_checkpoint.connected_locs = [entrance]
+    
     new_player = Player()
-    new_player.location = loc_a
-    new_player.inventory = [item_c]
+    new_player.location = entrance
+    new_player.inventory = [sword,note]
 
     while True:
+        
         new_player.handle_input()
+        #os.system("clear")
+    pass
 
-        # this is the trigger section and its bad
-        if item_a.trigger == True:
-            loc_a.connected_locs = [loc_b]
-            loc_b.connected_locs = [loc_a]
-        else:
-            loc_a.connected_locs = []
-            loc_b.connected_locs = []
+def main():
 
-
+    golem_scenario()
+    return
 
 if __name__ == "__main__":
     main()
+
+'''
+room title
+
+2 sentences describing the general look of the room
+
+1 sentence describing ways to go
+'''
