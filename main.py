@@ -56,76 +56,123 @@ class Player():
         self.name = "d_name"
         self.inventory = []
         self.location = None
-        self.actions = {"look" : self.look}
+        self.actions = {"look" : self.look,
+                        "take" : self.take,
+                        "drop" : self.drop,
+                        "use" : self.use,
+                        "inventory" : self.show_inventory,
+                        "move" : self.move}
 
     def look(self, primary_object = None):
-        if primary_object != None:
-            print(primary_object.desc)
-        elif self.location != None:
-            self.location.generate_desc()
+        objects = self.parse_items()
+        if len(objects) > 0:
+            print(objects[0].desc)
         else:
-            print("you are... nowhere?")
+            self.location.generate_desc()
 
-    def move(self, new_loc):
-        if new_loc in self.location.connected_locs:
-            self.location = new_loc
-            self.location.generate_desc()
-        
-        '''
-        if self.location.connected_locs[0].open == False:
-            print(f"cannot go to {self.location.connected_locs[0].name}, its locked")
+    def move(self):
+        locs = self.parse_locs()
+
+        if len(locs) > 0:
+            new_loc = locs[0]
+            if new_loc in self.location.connected_locs:
+                self.location = new_loc
+                self.location.generate_desc()
         else:
-        # if you cannot pass because the path is blocked, tell the player
-        # if you can pass, you do
-            self.location = self.location.connected_locs[0]
-            self.location.generate_desc()
-        '''
-    def take(self, primary_object):
+            print("where?")
+
+    def take(self):
+        objects = self.parse_items()
+        for object in objects:
         # this will need an update for sure
-        self.inventory.append(self.location.known_items.pop(self.location.known_items.index(primary_object)))
-        print(f"you took: {primary_object.name}")
+            self.inventory.append(self.location.known_items.pop(self.location.known_items.index(object)))
+            print(f"you took: {object.name}")
+    
+    def drop(self):
+        objects = self.parse_items()
+        for object in objects:
+        # this will need an update for sure
+            self.location.known_items.append(self.inventory.pop(self.inventory.index(object)))
+            print(f"you dropped: {object.name}")
 
-        '''
-        self.inventory.append(self.location.known_items.pop(1))
-        print(f"you took: {get_names(self.inventory)}")
-        '''
 
-    def use(self, primary_object, secondary_object = None):
+    def use(self):
         '''
         primary object: the thing we are operating
         secondary object: a modifier, a key or something in our inventory
 
         if there's no key to the object, we just use it
         '''
-        if primary_object.keys == None:
-            # flip switch / open box
-            primary_object.use()
+        objects = self.parse_items()
+
+        if len(objects) == 1:
+            primary_object = objects[0]
+            if primary_object.keys == None:
+                # flip switch / open box
+                primary_object.use()
             for object in primary_object.sub_items:
                 self.location.known_items.append(object)
-        elif secondary_object in primary_object.keys:
-            # open locked door / break window w/ blunt object
-            primary_object.use()
+        elif len(objects) == 2:
+            if objects[0] in objects[1].keys:
+                # open locked door / break window w/ blunt object
+                objects[0].use()
         else:
             print("that doesn't work :'C")
+    
+    def show_inventory(self):
+        print(get_names(self.inventory))
 
-        '''
-        '''
+    def parse_locs(self):
+        locs = []
 
+        for loc in self.location.connected_locs:
+            if loc.name in self.user_input:
+                print(loc.name)
+                locs.append(loc)
+        
+        return locs
+
+
+    def parse_items(self):
+        # this is probably too broad, I probably want to split into multiple pieces 
+
+        items = []
+        #items in inventory
+        for item in self.inventory:
+            if item.name in self.user_input:
+                #print(item.name)
+                items.append(item)
+        
+        #items on location
+        for item in self.location.known_items:
+            if item.name in self.user_input:
+                #print(item.name)
+                items.append(item)
+        
+        return items
+
+    
     def handle_input(self):
-        user_input = input(">")
-        valid_object = None
-        words = user_input.split(" ")
-        for word in words:
-            for object in self.location.known_items:
-                if word == object.name:
-                    valid_object = object
-                    break
+        self.user_input = input(">")
+        actions = []
+
+        # split up the input to find the first action word
+        # bassed on the word found, we should probably split it up into different categories maybe
+        input_split = self.user_input.split(" ")
+        for word in input_split:
             if word in self.actions:
-                self.actions[word](valid_object)
+                #print(word)
+                actions.append(word)
+        
+        if len(actions) == 1:
+            self.actions[actions[0]]()
+        else:
+            print("action unclear")
+     
+        # if items have names longer than one word, we are gonna have major issue
+        # okay now we need locations in here as well... try to determine the action first  
 
 class Location():
-    '''
-    '''
 
     def __init__(self):
         self.name = "d_name"
@@ -137,7 +184,6 @@ class Location():
         # kind of works, but doesn't lock down specific pathways :/
         self.keys = None
         self.open = True
-        
 
     def generate_desc(self):
         # print where you are, a list of objects close at hand, a list of connected locations
@@ -161,73 +207,52 @@ class Item():
         self.sub_items = []
         self.obstructed_locs = []
         self.keys = None
+        self.trigger = False
 
     def use(self):
         print(f"you use the {self.name}")
-        #print(get_names(self.sub_items))
-        # add sub items to known items?
-        pass
+        if self.trigger == True:
+            self.trigger = False
+        else:
+            self.trigger = True
 
 def main():
     loc_a = Location()
     loc_a.name = "kitchen"
 
+    loc_b = Location()
+    loc_b.name = "dining"
+
+    #loc_a.connected_locs.append(loc_b)
+    #loc_b.connected_locs.append(loc_a)
+
     item_a = Item()
-    item_a.name = "box key"
+    item_a.name = "switch"
 
     item_b = Item()
     item_b.name = "box"
+    item_b.desc = "its wood, it looks like theres a hole on the side of it"
     item_b.keys = [item_a]
+
+    item_c = Item()
+    item_c.name = "shiny locket"
 
     loc_a.known_items = [item_a,item_b]
 
     new_player = Player()
     new_player.location = loc_a
+    new_player.inventory = [item_c]
 
     while True:
         new_player.handle_input()
 
-    '''
-    item_a = Item()
-    item_a.name = "box key"
-
-    item_b = Item()
-    item_b.name = "box"
-    item_b.keys = [item_a]
-
-    item_c = Item()
-    item_c.name = "shelf"
-    item_c.desc = "A large wooden bookshelf stuffed tightly with old novels"
-
-    item_d = Item()
-    item_d.name = "red book"
-    item_e = Item()
-    item_e.name = "blue book"
-
-    item_c.sub_items =[item_d,item_e]
-
-    loc_a = Location()
-    loc_a.name = "kitchen"
-
-    loc_b = Location()
-    loc_b.name = "dining room"
-    loc_b.open = False
-
-    loc_a.known_items = [item_a,item_b,item_c]
-    loc_a.connected_locs.append(loc_b)
-
-    new_player = Player()
-    new_player.location = loc_a
-    
-    new_player.look()
-    new_player.take(item_a)
-    
-    new_player.use(item_c)
-    new_player.look(item_c)
-    new_player.take(item_e)
-    new_player.move(loc_b)
-    '''
-
+        # this is the trigger section and its bad
+        if item_a.trigger == True:
+            loc_a.connected_locs = [loc_b]
+            loc_b.connected_locs = [loc_a]
+        else:
+            loc_a.connected_locs = []
+            loc_b.connected_locs = []
 
 
 
